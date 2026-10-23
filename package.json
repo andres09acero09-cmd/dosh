@@ -1,0 +1,12 @@
+{
+  "name": "dos-game",
+  "version": "1.0.0",
+  "description": "Juego de cartas DOSH con soporte multijugador online y bots",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}
