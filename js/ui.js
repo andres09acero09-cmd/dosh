@@ -38,6 +38,28 @@ const uiState = {
   pendingMode:        null,     // 'replace'|'match' a restaurar tras USE_TABLE
   qPeekPendingSlot:   null,     // slot cuya carta esperamos ver (poder Q)
   pendingMatchAnim:   null,     // {slotEl, slotIndex} para animar el resultado de copia
+  // ── Pantallaza del canto de DOSH (3s y pausa del turno) ──
+  doshOverlayTimer:   null,     // timeout que oculta la pantallaza
+  doshPaused:         false,    // true mientras la pantallaza está en pantalla
+  doshPausedSeconds:  null,     // segundos congelados durante la pantallaza
+};
+
+// ─── Iconos SVG duotono-relleno (sin emojis, estilo Material) ───────────────
+
+const ICONS = {
+  bot:    '<svg class="inline-icon" viewBox="0 0 24 24" fill="#63e6be"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6C4.9 5 4 5.9 4 7v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3zm-4 5h-2v2h-4v-2H8v-4h2V8h4v2h2v4z"/></svg>',
+  user:   '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
+  crown:  '<svg class="inline-icon" viewBox="0 0 24 24" fill="#ffd43b"><path d="m2 4 3.5 12h11L22 4l-5.5 7L11 4 6.5 11 2 4z"/><rect x="5" y="18" width="12" height="3" rx="1.2" opacity="0.75"/></svg>',
+  deck:   '<svg class="inline-icon" viewBox="0 0 24 24"><rect x="2.5" y="6.5" width="11.5" height="15" rx="2" fill="currentColor" opacity="0.35" transform="rotate(-9 8.25 14)"/><rect x="8.5" y="4" width="12" height="16.5" rx="2" fill="currentColor" transform="rotate(6 14.5 12.25)"/><path fill="#1b4332" d="m14.9 9.2.75 1.55 1.7.25-1.22 1.2.3 1.7-1.53-.8-1.53.8.3-1.7-1.22-1.2 1.7-.25z"/></svg>',
+  eye:    '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>',
+  swap:   '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>',
+  copy:   '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>',
+  leave:  '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>',
+  cancel: '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>',
+  pass:   '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>',
+  bell:   '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>',
+  link:   '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/></svg>',
+  target: '<svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>',
 };
 
 // ─── Navegación ───────────────────────────────────────────────────────────────
@@ -49,11 +71,13 @@ function showScreen(id) {
 
 function renderModeSelect() {
   stopTurnTimer();
+  _clearDoshOverlay();
   showScreen('screen-mode-select');
 }
 
 function renderOnlineScreen() {
   stopTurnTimer();
+  _clearDoshOverlay();
   showScreen('screen-online');
 }
 
@@ -61,6 +85,7 @@ function renderOnlineScreen() {
 
 function renderSetup() {
   stopTurnTimer();
+  _clearDoshOverlay();
   if (uiState.revealTimer) {
     clearInterval(uiState.revealTimer);
     uiState.revealTimer = null;
@@ -303,7 +328,7 @@ function endOnlinePeekTurn() {
   hide('btn-peek-next');
 
   el('peek-player-name').textContent = '¡Cartas Memorizadas!';
-  el('peek-instruction').textContent = '⏳ Esperando a que todos los jugadores terminen de memorizar para abrir la mesa...';
+    el('peek-instruction').textContent = 'Esperando a que todos los jugadores terminen de memorizar para abrir la mesa...';
 
   // Notificar al servidor que este jugador terminó su fase de peek
   Network.sendGameAction('PEEK_DONE', {});
@@ -503,9 +528,9 @@ function renderPlayers() {
     const nameDiv = document.createElement('div');
     nameDiv.className = 'player-name';
     if (player.isBot) {
-      nameDiv.innerHTML = `🤖 ${player.name} <span class="player-tag bot">BOT</span>`;
+      nameDiv.innerHTML = `${ICONS.bot} ${player.name} <span class="player-tag bot">BOT</span>`;
     } else if (isMe) {
-      nameDiv.innerHTML = `👤 ${player.name} <span class="player-tag you">TÚ</span>`;
+      nameDiv.innerHTML = `${ICONS.user} ${player.name} <span class="player-tag you">TÚ</span>`;
     } else {
       nameDiv.textContent = player.name;
     }
@@ -693,7 +718,7 @@ function _updateActionArea() {
     const botBanner = document.createElement('div');
     botBanner.className = 'bot-indicator-banner';
     botBanner.style.cssText = 'padding: 12px 18px; font-weight: bold; color: #a5d8ff; font-size: 1.1rem; background: rgba(24, 100, 171, 0.25); border-radius: 8px; border: 1px solid #339af0;';
-    botBanner.innerHTML = `🤖 <em>${current.name}</em> está jugando su turno...`;
+    botBanner.innerHTML = `${ICONS.bot} <em>${current.name}</em> está jugando su turno...`;
     actContainer.appendChild(botBanner);
     return;
   }
@@ -719,20 +744,19 @@ function _updateActionArea() {
         uiState.turnMode = 'joker_red_select';
         renderPlayers(); // Re-renderizar para que las cartas sean clickeables
       }
-      setGameMessage(`🔥 ¡${current.name} botó el Joker Rojo! Es OBLIGATORIO usar su poder: toca una carta de TU baraja para botarla a la mesa (quedará encima del Joker Rojo):`, 'warning');
+      setGameMessage(`¡${current.name} botó el Joker Rojo! Es OBLIGATORIO usar su poder: toca una carta de TU baraja para botarla a la mesa (quedará encima del Joker Rojo):`, 'warning');
       // No hay botón cancelar: los Jokers son obligatorios
       return;
     }
 
     if (pPower.type === 'JOKER_BLACK') {
       uiState.turnMode = 'joker_black_select_player';
-      setGameMessage(`⚡ ¡${current.name} botó el Joker Negro! Es OBLIGATORIO usar su poder: elige a qué rival castigar (+2 cartas del mazo y le pasas el turno):`, 'warning');
+      setGameMessage(`¡${current.name} botó el Joker Negro! Es OBLIGATORIO usar su poder: elige a qué rival castigar (+2 cartas del mazo y le pasas el turno):`, 'warning');
       gs.players.forEach((p, idx) => {
         if (idx !== gs.currentPlayerIndex) {
           const btnTarget = document.createElement('button');
-          btnTarget.className = 'btn-primary';
-          btnTarget.style.background = 'linear-gradient(135deg, #495057, #1a1a1a)';
-          btnTarget.textContent = `🎯 Castigar a ${p.name}`;
+          btnTarget.className = 'btn-primary btn-target';
+          btnTarget.innerHTML = `${ICONS.target} Castigar a ${p.name}`;
           btnTarget.onclick = () => _onSelectJokerBlackTarget(idx);
           actContainer.appendChild(btnTarget);
         }
@@ -743,25 +767,25 @@ function _updateActionArea() {
 
     if (pPower.type === 'Q') {
       if (uiState.turnMode === 'q_peek') {
-        setGameMessage('👁 PODER DE LA Q: Toca la carta de TU baraja que deseas ver por 5 segundos.', 'warning');
+        setGameMessage('PODER DE LA Q: Toca la carta de TU baraja que deseas ver por 5 segundos.', 'warning');
         const btnSkip = document.createElement('button');
         btnSkip.className = 'btn-secondary';
-        btnSkip.textContent = 'TERMINAR TURNO (NO VER CARTA)';
+        btnSkip.innerHTML = `${ICONS.pass} TERMINAR TURNO (NO VER CARTA)`;
         btnSkip.onclick = () => _onSkipPendingPowerClick();
         actContainer.appendChild(btnSkip);
         return;
       }
 
-      setGameMessage(`👁 ¡${current.name} botó una Q! Puedes usar su poder para ver una carta de tu baraja por 5 segundos, o terminar tu turno:`, 'info');
+      setGameMessage(`¡${current.name} botó una Q! Puedes usar su poder para ver una carta de tu baraja por 5 segundos, o terminar tu turno:`, 'info');
       const btnQ = document.createElement('button');
       btnQ.className = 'btn-primary btn-power-q';
-      btnQ.textContent = '👁 VER CARTA (Q)';
+      btnQ.innerHTML = `${ICONS.eye} VER CARTA (Q)`;
       btnQ.onclick = () => { uiState.turnMode = 'q_peek'; updateTurnUI(); };
       actContainer.appendChild(btnQ);
 
       const btnEnd = document.createElement('button');
       btnEnd.className = 'btn-secondary';
-      btnEnd.textContent = 'TERMINAR TURNO';
+      btnEnd.innerHTML = `${ICONS.pass} TERMINAR TURNO`;
       btnEnd.onclick = () => _onSkipPendingPowerClick();
       actContainer.appendChild(btnEnd);
       return;
@@ -769,35 +793,35 @@ function _updateActionArea() {
 
     if (pPower.type === 'J') {
       if (uiState.turnMode === 'j_select_my') {
-        setGameMessage('🔄 PODER DE LA J (Paso 1): Toca una de TUS cartas para intercambiar.', 'warning');
+        setGameMessage('PODER DE LA J (Paso 1): Toca una de TUS cartas para intercambiar.', 'warning');
         const btnSkip = document.createElement('button');
         btnSkip.className = 'btn-secondary';
-        btnSkip.textContent = 'TERMINAR TURNO';
+        btnSkip.innerHTML = `${ICONS.pass} TERMINAR TURNO`;
         btnSkip.onclick = () => _onSkipPendingPowerClick();
         actContainer.appendChild(btnSkip);
         return;
       }
 
       if (uiState.turnMode === 'j_select_target') {
-        setGameMessage('🔄 PODER DE LA J (Paso 2): Ahora toca una carta de OTRO JUGADOR para intercambiarla.', 'warning');
+        setGameMessage('PODER DE LA J (Paso 2): Ahora toca una carta de OTRO JUGADOR para intercambiarla.', 'warning');
         const btnSkip = document.createElement('button');
         btnSkip.className = 'btn-secondary';
-        btnSkip.textContent = 'TERMINAR TURNO';
+        btnSkip.innerHTML = `${ICONS.pass} TERMINAR TURNO`;
         btnSkip.onclick = () => _onSkipPendingPowerClick();
         actContainer.appendChild(btnSkip);
         return;
       }
 
-      setGameMessage(`🔄 ¡${current.name} botó una J! Puedes usar su poder para intercambiar una carta con un rival (boca abajo), o terminar tu turno:`, 'info');
+      setGameMessage(`¡${current.name} botó una J! Puedes usar su poder para intercambiar una carta con un rival (boca abajo), o terminar tu turno:`, 'info');
       const btnJ = document.createElement('button');
       btnJ.className = 'btn-primary btn-power-j';
-      btnJ.textContent = '🔄 INTERCAMBIAR (J)';
+      btnJ.innerHTML = `${ICONS.swap} INTERCAMBIAR (J)`;
       btnJ.onclick = () => { uiState.turnMode = 'j_select_my'; updateTurnUI(); };
       actContainer.appendChild(btnJ);
 
       const btnEnd = document.createElement('button');
       btnEnd.className = 'btn-secondary';
-      btnEnd.textContent = 'TERMINAR TURNO';
+      btnEnd.innerHTML = `${ICONS.pass} TERMINAR TURNO`;
       btnEnd.onclick = () => _onSkipPendingPowerClick();
       actContainer.appendChild(btnEnd);
       return;
@@ -813,17 +837,16 @@ function _updateActionArea() {
         uiState.turnMode = 'joker_red_select';
         renderPlayers(); // Re-renderizar para que las cartas sean clickeables
       }
-      setGameMessage(`🔥 ¡${current.name} sacó el Joker Rojo del mazo! Es OBLIGATORIO usar su poder: toca una carta de TU baraja para botarla a la mesa (quedará encima del Joker Rojo):`, 'warning');
+      setGameMessage(`¡${current.name} sacó el Joker Rojo del mazo! Es OBLIGATORIO usar su poder: toca una carta de TU baraja para botarla a la mesa (quedará encima del Joker Rojo):`, 'warning');
       return;
     } else {
       uiState.turnMode = 'joker_black_select_player';
-      setGameMessage(`⚡ ¡${current.name} sacó el Joker Negro del mazo! Es OBLIGATORIO usar su poder: elige a qué rival castigar (+2 cartas del mazo y le pasas el turno):`, 'warning');
+      setGameMessage(`¡${current.name} sacó el Joker Negro del mazo! Es OBLIGATORIO usar su poder: elige a qué rival castigar (+2 cartas del mazo y le pasas el turno):`, 'warning');
       gs.players.forEach((p, idx) => {
         if (idx !== gs.currentPlayerIndex) {
           const btnTarget = document.createElement('button');
-          btnTarget.className = 'btn-primary';
-          btnTarget.style.background = 'linear-gradient(135deg, #495057, #1a1a1a)';
-          btnTarget.textContent = `🎯 Castigar a ${p.name}`;
+          btnTarget.className = 'btn-primary btn-target';
+          btnTarget.innerHTML = `${ICONS.target} Castigar a ${p.name}`;
           btnTarget.onclick = () => _onSelectJokerBlackTarget(idx);
           actContainer.appendChild(btnTarget);
         }
@@ -834,30 +857,30 @@ function _updateActionArea() {
 
   // ── Modos especiales en curso de cartas volteadas del mazo ──
   if (uiState.turnMode === 'q_peek') {
-    setGameMessage('👁 PODER DE LA Q: Toca una de TUS cartas para verla por 5 segundos.', 'warning');
+    setGameMessage('PODER DE LA Q: Toca una de TUS cartas para verla por 5 segundos.', 'warning');
     const btnCancel = document.createElement('button');
     btnCancel.className = 'btn-secondary';
-    btnCancel.textContent = 'CANCELAR';
+    btnCancel.innerHTML = `${ICONS.cancel} CANCELAR`;
     btnCancel.onclick = _onCancelAction;
     actContainer.appendChild(btnCancel);
     return;
   }
 
   if (uiState.turnMode === 'j_select_my') {
-    setGameMessage('🔄 PODER DE LA J (Paso 1): Toca una de TUS cartas para intercambiar.', 'warning');
+    setGameMessage('PODER DE LA J (Paso 1): Toca una de TUS cartas para intercambiar.', 'warning');
     const btnCancel = document.createElement('button');
     btnCancel.className = 'btn-secondary';
-    btnCancel.textContent = 'CANCELAR';
+    btnCancel.innerHTML = `${ICONS.cancel} CANCELAR`;
     btnCancel.onclick = _onCancelAction;
     actContainer.appendChild(btnCancel);
     return;
   }
 
   if (uiState.turnMode === 'j_select_target') {
-    setGameMessage('🔄 PODER DE LA J (Paso 2): Ahora toca una carta de OTRO JUGADOR para intercambiarla.', 'warning');
+    setGameMessage('PODER DE LA J (Paso 2): Ahora toca una carta de OTRO JUGADOR para intercambiarla.', 'warning');
     const btnCancel = document.createElement('button');
     btnCancel.className = 'btn-secondary';
-    btnCancel.textContent = 'CANCELAR';
+    btnCancel.innerHTML = `${ICONS.cancel} CANCELAR`;
     btnCancel.onclick = () => { uiState.jSelectedMySlot = null; _onCancelAction(); };
     actContainer.appendChild(btnCancel);
     return;
@@ -868,7 +891,7 @@ function _updateActionArea() {
     if (gs.drawnCard && gs.drawnCard.rank === 'Q') {
       const btnQ = document.createElement('button');
       btnQ.className = 'btn-secondary btn-power-q';
-      btnQ.textContent = '👁 VER CARTA (Q)';
+      btnQ.innerHTML = `${ICONS.eye} VER CARTA (Q)`;
       btnQ.onclick = () => { uiState.turnMode = 'q_peek'; updateTurnUI(); };
       actContainer.appendChild(btnQ);
     }
@@ -876,7 +899,7 @@ function _updateActionArea() {
     if (gs.drawnCard && gs.drawnCard.rank === 'J' && gs.jPowerUsable) {
       const btnJ = document.createElement('button');
       btnJ.className = 'btn-secondary btn-power-j';
-      btnJ.textContent = '🔄 INTERCAMBIAR (J)';
+      btnJ.innerHTML = `${ICONS.swap} INTERCAMBIAR (J)`;
       btnJ.onclick = () => { uiState.turnMode = 'j_select_my'; updateTurnUI(); };
       actContainer.appendChild(btnJ);
     }
@@ -887,7 +910,7 @@ function _updateActionArea() {
     if (gs.doshAnnouncedBy === null && !gs.drawnCard && uiState.turnMode === 'idle' && !gs.tableCardMatchedThisTurn && !gs.pendingDiscardPower && !gs.qChainActive) {
       const btnDosh = document.createElement('button');
       btnDosh.className = 'btn-primary btn-dosh';
-      btnDosh.textContent = '¡DOSH!';
+      btnDosh.innerHTML = `${ICONS.bell} ¡DOSH!`;
       btnDosh.onclick = _onDoshClick;
       actContainer.appendChild(btnDosh);
     }
@@ -897,28 +920,48 @@ function _updateActionArea() {
   if (!gs.drawnCard) {
 
     // ── SUB-CASO: Cadena de la Q activa (el jugador anterior usó la Q) ──
-    // Este jugador puede ver una carta (opcional), o rechazar rompiendo la cadena
+    // Este jugador puede ver una carta (opcional), jugar la Q de la mesa, o
+    // rechazar rompiendo la cadena. La copia con la Q y el cambio también valen.
     if (gs.qChainActive && gs.activeTableCard && gs.activeTableCard.rank === 'Q') {
       if (uiState.turnMode === 'q_peek') {
-        setGameMessage('👁 PODER DE LA Q EN CADENA: Toca una de TUS cartas para verla por 5 segundos.', 'warning');
-        const btnSkip = document.createElement('button');
-        btnSkip.className = 'btn-secondary';
-        btnSkip.textContent = 'NO VER (Rompe la cadena)';
-        btnSkip.onclick = () => _onBreakQChainClick();
-        actContainer.appendChild(btnSkip);
+        setGameMessage('PODER DE LA Q EN CADENA: Toca una de TUS cartas para verla por 5 segundos.', 'warning');
+        const btnCancel = document.createElement('button');
+        btnCancel.className = 'btn-secondary';
+        btnCancel.innerHTML = `${ICONS.cancel} CANCELAR (Rompe la cadena)`;
+        btnCancel.onclick = () => _onBreakQChainClick();
+        actContainer.appendChild(btnCancel);
         return;
       }
 
-      setGameMessage(`👁 ¡CADENA DE Q! ¿Quieres ver una de tus cartas por 5 segundos? Si no ves, la cadena se rompe.`, 'info');
+      setGameMessage('¡CADENA DE Q! Puedes ver una de tus cartas por 5 segundos, hacer copia con la Q de la mesa, cambiarla o voltear del mazo. Si no usas nada, la cadena se rompe.', 'info');
+
       const btnSeeCard = document.createElement('button');
       btnSeeCard.className = 'btn-primary btn-power-q';
-      btnSeeCard.textContent = '👁 VER CARTA (Q)';
+      btnSeeCard.innerHTML = `${ICONS.eye} VER CARTA (Q)`;
       btnSeeCard.onclick = () => { uiState.turnMode = 'q_peek'; updateTurnUI(); };
       actContainer.appendChild(btnSeeCard);
 
+      const btnMatchQ = document.createElement('button');
+      btnMatchQ.className = 'btn-secondary btn-power-q';
+      btnMatchQ.innerHTML = `${ICONS.copy} HACER COPIA (Q)`;
+      btnMatchQ.onclick = _onStartMatchTableClick;
+      actContainer.appendChild(btnMatchQ);
+
+      const btnReplaceQ = document.createElement('button');
+      btnReplaceQ.className = 'btn-secondary';
+      btnReplaceQ.innerHTML = `${ICONS.swap} CAMBIARLA (toma la Q)`;
+      btnReplaceQ.onclick = _onStartReplaceTableClick;
+      actContainer.appendChild(btnReplaceQ);
+
+      const btnDrawQ = document.createElement('button');
+      btnDrawQ.className = 'btn-secondary';
+      btnDrawQ.innerHTML = `${ICONS.deck} VOLTEAR DEL MAZO`;
+      btnDrawQ.onclick = _onDrawCardClick;
+      actContainer.appendChild(btnDrawQ);
+
       const btnNoSee = document.createElement('button');
       btnNoSee.className = 'btn-secondary';
-      btnNoSee.textContent = 'NO VER (Rompe la cadena)';
+      btnNoSee.innerHTML = `${ICONS.link} NO USAR (Rompe la cadena)`;
       btnNoSee.onclick = () => _onBreakQChainClick();
       actContainer.appendChild(btnNoSee);
       return;
@@ -930,10 +973,10 @@ function _updateActionArea() {
 
       // SUB-CASO: Ya hizo copia con la de la mesa en este turno -> solo puede voltear del mazo
       if (gs.tableCardMatchedThisTurn) {
-        setGameMessage(`¡Copia exitosa! Continúa tu turno: debes voltear una carta del mazo (no puedes cambiar la carta que acabas de emparejar):`, 'info');
+        setGameMessage('¡Copia exitosa! Continúa tu turno: debes voltear una carta del mazo (no puedes cambiar la carta que acabas de emparejar):', 'info');
         const btnDraw = document.createElement('button');
         btnDraw.className = 'btn-primary';
-        btnDraw.textContent = 'VOLTEAR DEL MAZO';
+        btnDraw.innerHTML = `${ICONS.deck} VOLTEAR DEL MAZO`;
         btnDraw.onclick = _onDrawCardClick;
         actContainer.appendChild(btnDraw);
         return;
@@ -949,7 +992,7 @@ function _updateActionArea() {
         // Botón: Voltear del mazo
         const btnDraw = document.createElement('button');
         btnDraw.className = 'btn-primary';
-        btnDraw.textContent = 'VOLTEAR DEL MAZO';
+        btnDraw.innerHTML = `${ICONS.deck} VOLTEAR DEL MAZO`;
         btnDraw.onclick = _onDrawCardClick;
         actContainer.appendChild(btnDraw);
 
@@ -957,7 +1000,7 @@ function _updateActionArea() {
         if (!isTableJoker) {
           const btnReplace = document.createElement('button');
           btnReplace.className = 'btn-secondary';
-          btnReplace.textContent = 'CAMBIARLA';
+          btnReplace.innerHTML = `${ICONS.swap} CAMBIARLA`;
           btnReplace.onclick = _onStartReplaceTableClick;
           actContainer.appendChild(btnReplace);
         }
@@ -965,14 +1008,14 @@ function _updateActionArea() {
         // Botón: Hacer copia (usando la de la mesa)
         const btnMatch = document.createElement('button');
         btnMatch.className = 'btn-secondary';
-        btnMatch.textContent = 'HACER COPIA';
+        btnMatch.innerHTML = `${ICONS.copy} HACER COPIA`;
         btnMatch.onclick = _onStartMatchTableClick;
         actContainer.appendChild(btnMatch);
 
         // Botón: Dejarla (pasar turno manteniendo la carta)
         const btnLeave = document.createElement('button');
         btnLeave.className = 'btn-secondary';
-        btnLeave.textContent = 'DEJARLA';
+        btnLeave.innerHTML = `${ICONS.leave} DEJARLA`;
         btnLeave.onclick = _onPassTurnClick;
         actContainer.appendChild(btnLeave);
 
@@ -982,7 +1025,7 @@ function _updateActionArea() {
         setGameMessage(`Toca cualquiera de tus cartas para cambiarla por el ${tableLabel} de la mesa.`, 'warning');
         const btnCancel = document.createElement('button');
         btnCancel.className = 'btn-secondary';
-        btnCancel.textContent = 'CANCELAR';
+        btnCancel.innerHTML = `${ICONS.cancel} CANCELAR`;
         btnCancel.onclick = _onCancelAction;
         actContainer.appendChild(btnCancel);
 
@@ -990,7 +1033,7 @@ function _updateActionArea() {
         setGameMessage(`Toca la carta de tu baraja que crees que es un ${tableLabel}. Si aciertas se reduce; si fallas te comes una del mazo sin ver.`, 'warning');
         const btnCancel = document.createElement('button');
         btnCancel.className = 'btn-secondary';
-        btnCancel.textContent = 'CANCELAR';
+        btnCancel.innerHTML = `${ICONS.cancel} CANCELAR`;
         btnCancel.onclick = _onCancelAction;
         actContainer.appendChild(btnCancel);
       }
@@ -1000,7 +1043,7 @@ function _updateActionArea() {
       setGameMessage(`Es el turno de ${current.name}. Voltea una carta del mazo.`, 'info');
       const btnDraw = document.createElement('button');
       btnDraw.className = 'btn-primary';
-      btnDraw.textContent = 'VOLTEAR DEL MAZO';
+      btnDraw.innerHTML = `${ICONS.deck} VOLTEAR DEL MAZO`;
       btnDraw.onclick = _onDrawCardClick;
       actContainer.appendChild(btnDraw);
 
@@ -1017,21 +1060,21 @@ function _updateActionArea() {
       // 1. Dejarla
       const btnDiscard = document.createElement('button');
       btnDiscard.className = 'btn-secondary';
-      btnDiscard.textContent = 'DEJARLA';
+      btnDiscard.innerHTML = `${ICONS.leave} DEJARLA`;
       btnDiscard.onclick = _onDiscardClick;
       actContainer.appendChild(btnDiscard);
 
       // 2. Cambiarla
       const btnReplace = document.createElement('button');
       btnReplace.className = 'btn-primary';
-      btnReplace.textContent = 'CAMBIARLA';
+      btnReplace.innerHTML = `${ICONS.swap} CAMBIARLA`;
       btnReplace.onclick = _onStartReplaceClick;
       actContainer.appendChild(btnReplace);
 
       // 3. Hacer copia
       const btnMatch = document.createElement('button');
       btnMatch.className = 'btn-primary';
-      btnMatch.textContent = 'HACER COPIA';
+      btnMatch.innerHTML = `${ICONS.copy} HACER COPIA`;
       btnMatch.onclick = _onStartMatchClick;
       actContainer.appendChild(btnMatch);
 
@@ -1041,7 +1084,7 @@ function _updateActionArea() {
       setGameMessage(`Toca cualquiera de tus cartas para cambiarla por el ${drawnLabel}. La carta que saques quedará en la mesa.`, 'warning');
       const btnCancel = document.createElement('button');
       btnCancel.className = 'btn-secondary';
-      btnCancel.textContent = 'CANCELAR';
+      btnCancel.innerHTML = `${ICONS.cancel} CANCELAR`;
       btnCancel.onclick = _onCancelAction;
       actContainer.appendChild(btnCancel);
 
@@ -1049,7 +1092,7 @@ function _updateActionArea() {
       setGameMessage(`Toca la carta de tu baraja que crees que es un ${drawnLabel}. Si aciertas se reduce; si fallas te comes una carta del mazo sin ver.`, 'warning');
       const btnCancel = document.createElement('button');
       btnCancel.className = 'btn-secondary';
-      btnCancel.textContent = 'CANCELAR';
+      btnCancel.innerHTML = `${ICONS.cancel} CANCELAR`;
       btnCancel.onclick = _onCancelAction;
       actContainer.appendChild(btnCancel);
     }
@@ -1075,7 +1118,7 @@ async function _onDrawCardClick() {
 
   // Si se reconstituyó el mazo con las cartas de la mesa
   if (result.reshuffled) {
-    await Anim.toast('🔀 ¡Cartas agotadas! Rebarajando las cartas de la mesa...', 'warning', 2200);
+    await Anim.toast('¡Cartas agotadas! Rebarajando las cartas de la mesa...', 'warning', 2200);
     await Anim.shuffleDeckOnTable();
   }
 
@@ -1180,11 +1223,17 @@ function _onCancelAction() {
   const gs = Game.gameState;
 
   if (gs.isOnline) {
-    if (gs.pendingDiscardPower && (gs.pendingDiscardPower.type === 'Q' || gs.pendingDiscardPower.type === 'J')) {
-      Network.sendGameAction('SKIP_PENDING_POWER');
-    }
     uiState.turnMode = 'idle';
     uiState.jSelectedMySlot = null;
+    if (gs.pendingDiscardPower
+        && (gs.pendingDiscardPower.type === 'Q' || gs.pendingDiscardPower.type === 'J')) {
+      // Caso A (poder pendiente tras botar la carta): cancelar SOLAMENTE
+      // aquí renuncia al poder del servidor; el estado llega por STATE.
+      Network.sendGameAction('SKIP_PENDING_POWER');
+      return;
+    }
+    // Modo de selección local (replace/match/etc.): solo volver atrás.
+    updateTurnUI();
     return;
   }
 
@@ -1263,35 +1312,35 @@ async function _onSlotReplaceClick(slotIndex) {
   // Si la carta botada activa un poder
   if (result.pendingPower === 'JOKER_RED') {
     uiState.turnMode = 'joker_red_select';
-    await Anim.toast('🔥 ¡Botaste el Joker Rojo! Obligatorio botar otra carta a la mesa', 'warning', 2200);
+    await Anim.toast('¡Botaste el Joker Rojo! Obligatorio botar otra carta a la mesa', 'warning', 2200);
     updateTurnUI();
     return;
   }
 
   if (result.pendingPower === 'JOKER_BLACK') {
     uiState.turnMode = 'joker_black_select_player';
-    await Anim.toast('⚡ ¡Botaste el Joker Negro! Obligatorio castigar a un rival (+2)', 'warning', 2200);
+    await Anim.toast('¡Botaste el Joker Negro! Obligatorio castigar a un rival (+2)', 'warning', 2200);
     updateTurnUI();
     return;
   }
 
   if (result.pendingPower === 'Q') {
     uiState.turnMode = 'idle';
-    await Anim.toast('👁 ¡Botaste una Q! Puedes ver una de tus cartas', 'info', 1800);
+    await Anim.toast('¡Botaste una Q! Puedes ver una de tus cartas', 'info', 1800);
     updateTurnUI();
     return;
   }
 
   if (result.pendingPower === 'J') {
     uiState.turnMode = 'idle';
-    await Anim.toast('🔄 ¡Botaste una J! Puedes intercambiar una carta', 'info', 1800);
+    await Anim.toast('¡Botaste una J! Puedes intercambiar una carta', 'info', 1800);
     updateTurnUI();
     return;
   }
 
   uiState.turnMode = 'idle';
   setGameMessage(`${currentName} cambió una carta. El ${Deck.getCardLabel(result.oldCard)} quedó en la mesa.`, 'success');
-  Anim.toast('♻ Cambio realizado', 'success', 1200);
+  Anim.toast('Cambio realizado', 'success', 1200);
   updateTurnUI();
 }
 
@@ -1328,7 +1377,7 @@ async function _onSlotMatchClick(slotIndex) {
     if (slotEl) await Anim.copySuccess(slotEl, cardData);
 
     if (result.gameEnded) {
-      await Anim.toast(`🏆 ¡${result.winner.name} gana la partida!`, 'success', 2500);
+      await Anim.toast(`¡${result.winner.name} gana la partida!`, 'success', 2500);
       setGameStatus('¡PARTIDA TERMINADA!');
       setGameMessage(`¡${result.winner.name} se quedó con 0 cartas y GANA LA PARTIDA!`, 'success');
       updateTurnUI();
@@ -1336,14 +1385,14 @@ async function _onSlotMatchClick(slotIndex) {
     }
 
     if (result.drawnFromTable) {
-      await Anim.toast('✅ ¡Copia correcta! Sigue tu turno', 'success', 1600);
+      await Anim.toast('¡Copia correcta! Sigue tu turno', 'success', 1600);
       setGameMessage(
         `¡Copia correcta! ${current.name} eliminó su ${Deck.getCardLabel(result.removedCard)} y ahora le quedan ${current.hand.length}. Sigue siendo su turno.`,
         'success'
       );
     } else {
       const next = Game.getCurrentPlayer();
-      await Anim.toast('✅ ¡Copia correcta!', 'success', 1400);
+      await Anim.toast('¡Copia correcta!', 'success', 1400);
       setGameMessage(
         `¡Copia correcta! ${current.name} eliminó su ${Deck.getCardLabel(result.removedCard)} y ahora le quedan ${current.hand.length}. Turno de ${next.name}.`,
         'success'
@@ -1359,14 +1408,14 @@ async function _onSlotMatchClick(slotIndex) {
     }
 
     if (result.drawnFromTable) {
-      await Anim.toast(`❌ ¡No era igual! Era un ${Deck.getCardLabel(result.revealedCard)}. +1 carta. Sigue tu turno`, 'error', 2200);
+      await Anim.toast(`¡No era igual! Era un ${Deck.getCardLabel(result.revealedCard)}. +1 carta. Sigue tu turno`, 'error', 2200);
       setGameMessage(
         `¡No era igual! Era un ${Deck.getCardLabel(result.revealedCard)}. Te comes una carta del mazo sin ver. Ahora tienes ${current.hand.length}. Sigue siendo tu turno.`,
         'error'
       );
     } else {
       const next = Game.getCurrentPlayer();
-      await Anim.toast(`❌ ¡No era igual! Era un ${Deck.getCardLabel(result.revealedCard)}. +1 carta`, 'error', 2200);
+      await Anim.toast(`¡No era igual! Era un ${Deck.getCardLabel(result.revealedCard)}. +1 carta`, 'error', 2200);
       setGameMessage(
         `¡No era igual! Era un ${Deck.getCardLabel(result.revealedCard)}. Te comes una carta sin ver. Ahora tienes ${current.hand.length}. Turno de ${next.name}.`,
         'error'
@@ -1464,15 +1513,34 @@ function startTurnTimer() {
  * ONLINE: muestra la cuenta atrás que envía el servidor SIN decidir nada.
  * El vencimiento (acciones) lo ejecuta únicamente el servidor.
  */
+/**
+ * ONLINE: muestra la cuenta atrás que envía el servidor SIN decidir nada.
+ * El vencimiento (acciones) lo ejecuta únicamente el servidor.
+ */
 function syncTurnTimerDisplay(seconds) {
   stopTurnTimer();
   uiState.turnSecondsLeft = seconds;
   _updateTurnTimerDisplay();
   show('turn-timer-container');
 
+  // La pantallaza del DOSH congela la cuenta: se reanuda al cerrarse.
+  if (uiState.doshPaused) {
+    uiState.doshPausedSeconds = seconds;
+    return;
+  }
+  startCountdownInterval();
+}
+
+/** Arranca el intervalo de cuenta atrás local (desde turnSecondsLeft). */
+function startCountdownInterval() {
+  stopTurnTimer();
   uiState.turnTimer = setInterval(() => {
     uiState.turnSecondsLeft = Math.max(0, uiState.turnSecondsLeft - 1);
     _updateTurnTimerDisplay();
+    if (uiState.turnSecondsLeft <= 0) {
+      stopTurnTimer();
+      _onTurnTimeout();
+    }
   }, 1000);
 }
 
@@ -1481,6 +1549,37 @@ function stopTurnTimer() {
     clearInterval(uiState.turnTimer);
     uiState.turnTimer = null;
   }
+}
+
+/** Muestra la pantallaza grande “X cantó DOSH” durante 3 s y congela la cuenta del turno. */
+function _showDoshOverlay(playerName) {
+  clearTimeout(uiState.doshOverlayTimer);
+  uiState.doshPaused = true;
+  uiState.doshPausedSeconds = null;
+
+  const nameEl = document.getElementById('dosh-overlay-name');
+  if (nameEl) nameEl.textContent = playerName || '';
+  const overlay = document.getElementById('dosh-overlay');
+  if (!overlay) return;
+  stopTurnTimer();
+  overlay.classList.remove('hidden');
+
+  uiState.doshOverlayTimer = setTimeout(() => {
+    overlay.classList.add('hidden');
+    uiState.doshPaused = false;
+    const resume = (uiState.doshPausedSeconds !== null) ? uiState.doshPausedSeconds : uiState.turnSecondsLeft;
+    uiState.doshPausedSeconds = null;
+    startCountdownInterval();
+  }, 3000);
+}
+
+/** Limpia la pantallaza (al salir al menú / nueva partida). */
+function _clearDoshOverlay() {
+  if (uiState.doshOverlayTimer) { clearTimeout(uiState.doshOverlayTimer); uiState.doshOverlayTimer = null; }
+  uiState.doshPaused = false;
+  uiState.doshPausedSeconds = null;
+  const overlay = document.getElementById('dosh-overlay');
+  if (overlay) overlay.classList.add('hidden');
 }
 
 function _updateTurnTimerDisplay() {
@@ -1569,7 +1668,7 @@ async function _onSlotQPeekClick(slotIndex) {
 
   // Ver durante 5 segundos con cuenta atrás visible
   for (let s = 5; s >= 1; s--) {
-    setGameMessage(`👁 Viendo tu carta (${cardLabel}): ${s} segundo${s !== 1 ? 's' : ''}...`, 'info');
+    setGameMessage(`Viendo tu carta (${cardLabel}): ${s} segundo${s !== 1 ? 's' : ''}...`, 'info');
     await _sleep(1000);
   }
 
@@ -1629,7 +1728,7 @@ async function _onSlotJSelectTargetClick(targetPlayerIndex, targetSlotIndex) {
   uiState.jSelectedMySlot = null;
   uiState.turnMode = 'idle';
 
-  await Anim.toast(`🔄 ¡${currentName} intercambió una carta con ${targetName}!`, 'info', 1800);
+  await Anim.toast(`¡${currentName} intercambió una carta con ${targetName}!`, 'info', 1800);
   updateTurnUI();
 }
 
@@ -1662,10 +1761,10 @@ async function _onSlotJokerRedClick(slotIndex) {
   }
 
   uiState.turnMode = 'idle';
-  await Anim.toast(`🔥 ¡${currentName} botó una carta con el Joker Rojo!`, 'success', 2200);
+  await Anim.toast(`¡${currentName} botó una carta con el Joker Rojo!`, 'success', 2200);
 
   if (result.gameEnded) {
-    await Anim.toast(`🏆 ¡${result.winner.name} se quedó sin cartas y GANA!`, 'success', 2500);
+    await Anim.toast(`¡${result.winner.name} se quedó sin cartas y GANA!`, 'success', 2500);
   }
 
   updateTurnUI();
@@ -1697,7 +1796,7 @@ async function _onSelectJokerBlackTarget(targetPlayerIndex) {
   }
 
   uiState.turnMode = 'idle';
-  await Anim.toast(`⚡ ¡${currentName} castigó a ${targetPlayer.name} (+2 cartas)! Turno de ${targetPlayer.name}`, 'warning', 2600);
+  await Anim.toast(`¡${currentName} castigó a ${targetPlayer.name} (+2 cartas)! Turno de ${targetPlayer.name}`, 'warning', 2600);
 
   updateTurnUI();
 }
@@ -1719,7 +1818,8 @@ async function _onDoshClick() {
     return;
   }
 
-  await Anim.toast(`🔥 ¡${result.player.name} CANTÓ DOSH! Juega tu turno y luego comenzará la última ronda para los demás.`, 'warning', 3000);
+  await _showDoshOverlay(result.player.name);
+  setGameMessage(`${result.player.name} cantó DOSH: ¡última ronda para los demás!`, 'warning');
   updateTurnUI();
 }
 
@@ -1779,7 +1879,7 @@ function _runNextRevealStep() {
   btnReveal.style.background = 'linear-gradient(135deg, #7048e8, #f59f00)';
   btnReveal.style.fontSize = '1.05rem';
   btnReveal.style.padding = '12px 24px';
-  btnReveal.textContent = `👁 REVELAR CARTAS (${uiState.revealSecondsLeft}s)`;
+  btnReveal.innerHTML = `${ICONS.eye} REVELAR CARTAS (${uiState.revealSecondsLeft}s)`;
 
   let triggered = false;
   const executeReveal = async () => {
@@ -1812,7 +1912,7 @@ function _runNextRevealStep() {
 
     renderPlayers();
 
-    await Anim.toast(`🃏 ${player.name} reveló sus cartas: Total = ${totalScore} pts`, 'info', 2200);
+    await Anim.toast(`${player.name} reveló sus cartas: Total = ${totalScore} pts`, 'info', 2200);
     await _sleep(1800);
 
     uiState.revealStep++;
@@ -1831,7 +1931,7 @@ function _runNextRevealStep() {
     uiState.revealTimer = setInterval(() => {
       uiState.revealSecondsLeft--;
       if (uiState.revealSecondsLeft > 0) {
-        btnReveal.textContent = `👁 REVELAR CARTAS (${uiState.revealSecondsLeft}s)`;
+        btnReveal.innerHTML = `${ICONS.eye} REVELAR CARTAS (${uiState.revealSecondsLeft}s)`;
       } else {
         executeReveal();
       }
@@ -1854,7 +1954,7 @@ async function _runBotTurn(botIndex) {
 
   isBotTurnRunning = true;
   try {
-    setGameMessage(`🤖 ${bot.name} está pensando su jugada...`, 'info');
+    setGameMessage(`${bot.name} está pensando su jugada...`, 'info');
 
     await BotAI.playTurn(botIndex, gs, {
       announceDosh: () => {
@@ -2159,6 +2259,15 @@ async function _runActionAnimations(text, drawnCardForMe, payload = {}) {
   const pub = payload.public || {};
   const fx = pub.fx || null;
 
+  // ── Pantallaza del canto de DOSH: grande, 3 segundos, congela el turno ──
+  if (text && /CANTÓ DOSH/.test(text)) {
+    let doshName = '';
+    if (pub.doshAnnouncedBy != null && pub.players && pub.players[pub.doshAnnouncedBy]) {
+      doshName = pub.players[pub.doshAnnouncedBy].name;
+    }
+    _showDoshOverlay(doshName);
+  }
+
   // ── Voltee del mazo: REGLA → la carta es PÚBLICA, todos la ven revelarse ──
   if (text) {
     const mineDraw = /^Volteaste .+? del mazo/.test(text);
@@ -2218,7 +2327,7 @@ async function _animateQPeekViewing(slotIdx, cardData) {  const gs = Game.gameSt
   renderPlayers();
 
   for (let s = 5; s >= 1; s--) {
-    setGameMessage(`👁 Viendo tu carta (${cardLabel}): ${s} segundo${s !== 1 ? 's' : ''}...`, 'info');
+    setGameMessage(`Viendo tu carta (${cardLabel}): ${s} segundo${s !== 1 ? 's' : ''}...`, 'info');
     await _sleep(1000);
   }
 
@@ -2248,11 +2357,11 @@ function showGameOverModal(results = null) {
 
     const winners = res.filter(r => r.isWinner);
     if (winners.length === 1) {
-      titleEl.textContent = `🏆 ¡${winners[0].name} GANA!`;
+      titleEl.textContent = `¡${winners[0].name} GANA!`;
     } else if (winners.length > 1) {
-      titleEl.textContent = `🏆 ¡EMPATE!`;
+      titleEl.textContent = '¡EMPATE!';
     } else {
-      titleEl.textContent = '🏆 Partida Terminada';
+      titleEl.textContent = 'Partida Terminada';
     }
 
     const doshName = gs.doshAnnouncedBy !== null && gs.players[gs.doshAnnouncedBy]
@@ -2268,7 +2377,7 @@ function showGameOverModal(results = null) {
 
       const nameSpan = document.createElement('span');
       nameSpan.className = 'player-score-name';
-      nameSpan.innerHTML = `${r.isWinner ? '👑 ' : ''}<strong>${idx + 1}.</strong> ${r.name}`;
+      nameSpan.innerHTML = `${r.isWinner ? ICONS.crown + ' ' : ''}<strong>${idx + 1}.</strong> ${r.name}`;
 
       const cardsDiv = document.createElement('span');
       cardsDiv.className = 'player-score-cards';
@@ -2319,23 +2428,23 @@ function showGameOverModal(results = null) {
   // ¿Hay un ganador inmediato (0 cartas)?
   const immediateWinner = gs.players.find(p => p.hand.length === 0);
   if (immediateWinner) {
-    titleEl.textContent = `🏆 ¡${immediateWinner.name} GANA!`;
+    titleEl.textContent = `¡${immediateWinner.name} GANA!`;
     subEl.textContent   = `Se quedó con 0 cartas. ¡Victoria inmediata!`;
   } else if (gs.doshAnnouncedBy !== null) {
     const doshPlayer = gs.players[gs.doshAnnouncedBy];
     const winners = results.filter(r => r.isWinner);
     if (winners.length === 1) {
-      titleEl.textContent = `🏆 ¡${winners[0].player.name} GANA!`;
+      titleEl.textContent = `¡${winners[0].player.name} GANA!`;
     } else {
-      titleEl.textContent = `🏆 ¡EMPATE!`;
+      titleEl.textContent = '¡EMPATE!';
     }
     subEl.textContent = `${doshPlayer.name} cantó ¡DOSH! Los turnos se cerraron. Puntuación final (menor = mejor). Jokers = 15 pts, K negra = 13, K roja = 0.`;
   } else {
     const winners = results.filter(r => r.isWinner);
     if (winners.length === 1) {
-      titleEl.textContent = `🏆 ¡${winners[0].player.name} GANA!`;
+      titleEl.textContent = `¡${winners[0].player.name} GANA!`;
     } else {
-      titleEl.textContent = `🏆 ¡EMPATE!`;
+      titleEl.textContent = '¡EMPATE!';
     }
     subEl.textContent = 'Puntuación final (menor = mejor). Jokers = 15 pts, K negra = 13, K roja = 0, As = 1...';
   }
@@ -2349,7 +2458,7 @@ function showGameOverModal(results = null) {
     // Nombre con posición
     const nameSpan = document.createElement('span');
     nameSpan.className = 'player-score-name';
-    nameSpan.innerHTML = `${r.isWinner ? '👑 ' : ''}<strong>${idx + 1}.</strong> ${r.player.name}`;
+    nameSpan.innerHTML = `${r.isWinner ? ICONS.crown + ' ' : ''}<strong>${idx + 1}.</strong> ${r.player.name}`;
 
     // Mini cartas reveladas
     const cardsDiv = document.createElement('span');

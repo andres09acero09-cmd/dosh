@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DOSH - Juego de Cartas</title>
-  <link rel="stylesheet" href="css/style.css?v=2.1">
+  <link rel="stylesheet" href="css/style.css?v=2.3">
 </head>
 <body>
 
@@ -17,13 +17,28 @@
       <p class="game-subtitle">Elige cómo deseas jugar</p>
 
       <button id="btn-select-online" class="btn-mode-card primary-mode">
-        <span class="mode-card-icon">🌐</span>
+        <span class="mode-card-icon">
+          <svg viewBox="0 0 48 48">
+            <circle cx="24" cy="24" r="19" fill="#18385f"/>
+            <circle cx="24" cy="24" r="19" fill="none" stroke="#4fc3f7" stroke-width="2.6"/>
+            <path d="M5.5 24h37M24 5.5c5.6 5 8.4 11.4 8.4 18.5s-2.8 13.5-8.4 18.5c-5.6-5-8.4-11.4-8.4-18.5S18.4 10.5 24 5.5z" fill="none" stroke="#7ee0ff" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+        </span>
         <span>MULTIJUGADOR ONLINE</span>
         <span class="mode-card-desc">Salas de 3 a 8 jugadores con amigos o Bots/IA</span>
       </button>
 
       <button id="btn-select-local" class="btn-mode-card">
-        <span class="mode-card-icon">🎮</span>
+        <span class="mode-card-icon">
+          <svg viewBox="0 0 48 48">
+            <rect x="4" y="14" width="40" height="24" rx="10" fill="#5b21b6" opacity="0.55"/>
+            <rect x="4" y="14" width="40" height="24" rx="10" fill="none" stroke="#d8b4fe" stroke-width="2.4"/>
+            <path d="M15 21h6M18 18v6" stroke="#f3e8ff" stroke-width="2.6" stroke-linecap="round"/>
+            <circle cx="33" cy="22.5" r="2.2" fill="#f3e8ff"/>
+            <circle cx="28.5" cy="29" r="2.2" fill="#f3e8ff" opacity="0.7"/>
+            <circle cx="33" cy="29" r="0.01"/>
+          </svg>
+        </span>
         <span>PARTIDA LOCAL</span>
         <span class="mode-card-desc">Juega en este mismo dispositivo por turnos</span>
       </button>
@@ -99,7 +114,12 @@
               <span id="val-online-players">3</span>
               <button id="btn-more-online-players">+</button>
             </div>
-            <p class="lobby-bots-note">🤖 Mínimo 3 jugadores. Si faltan jugadores reales, se llenarán con Bots/IA.</p>
+            <p class="lobby-bots-note">
+              <svg class="inline-icon" viewBox="0 0 24 24" fill="#63e6be">
+                <path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6C4.9 5 4 5.9 4 7v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3zm-4 5h-2v2h-4v-2H8v-4h2V8h4v2h2v4z"/>
+              </svg>
+              Mínimo 3 jugadores. Si faltan jugadores reales, se llenarán con Bots/IA.
+            </p>
           </div>
 
           <div class="form-group">
@@ -139,11 +159,21 @@
         <p class="game-subtitle" style="margin-bottom: 0.5rem;">CÓDIGO DE LA SALA:</p>
         <div class="room-code-badge">
           <span id="lobby-room-code">------</span>
-          <button id="btn-copy-code" class="btn-small">📋 Copiar</button>
+          <button id="btn-copy-code" class="btn-small">
+            <svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>
+            Copiar
+          </button>
         </div>
 
         <p id="lobby-players-count" style="font-weight: 700; margin-top: 0.5rem;">Jugadores: 1 / 3</p>
-        <p class="lobby-bots-note">🤖 Las plazas restantes se completarán con Bots automáticamente al iniciar.</p>
+        <p class="lobby-bots-note">
+          <svg class="inline-icon" viewBox="0 0 24 24" fill="#63e6be">
+            <path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6C4.9 5 4 5.9 4 7v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3zm-4 5h-2v2h-4v-2H8v-4h2V8h4v2h2v4z"/>
+          </svg>
+          Las plazas restantes se completarán con Bots automáticamente al iniciar.
+        </p>
 
         <div id="lobby-players-list" class="lobby-players-list"></div>
 
@@ -197,10 +227,12 @@
     <header class="game-header">
       <h1 class="game-title small">DOSH</h1>
       <div id="game-status" class="game-status"></div>
-      
+
       <!-- Temporizador de 30 segundos para el turno -->
       <div id="turn-timer-container" class="turn-timer-container hidden">
-        <span class="turn-timer-icon">⏱</span>
+        <svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+        </svg>
         <div class="turn-timer-bar-wrap">
           <div id="turn-timer-bar" class="turn-timer-bar"></div>
         </div>
@@ -239,10 +271,24 @@
       <div id="action-buttons" class="action-buttons"></div>
     </footer>
 
+    <!-- Pantallaza de canto de DOSH (3 segundos, pausa el turno) -->
+    <div id="dosh-overlay" class="hidden">
+      <div class="dosh-overlay-box">
+        <p class="dosh-overlay-label">HA CANTADO</p>
+        <h2 class="dosh-overlay-text">¡DOSH!</h2>
+        <p id="dosh-overlay-name" class="dosh-overlay-name"></p>
+      </div>
+    </div>
+
     <!-- Modal de Fin de Partida / Puntajes DOSH -->
     <div id="modal-game-over" class="modal-overlay hidden">
       <div class="modal-box">
-        <h2 id="game-over-title">🏆 ¡FIN DE LA PARTIDA!</h2>
+        <h2 id="game-over-title" class="game-over-title-svg">
+          <svg class="inline-icon rodea" viewBox="0 0 24 24" fill="#f9a825">
+            <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/>
+          </svg>
+          ¡FIN DE LA PARTIDA!
+        </h2>
         <p id="game-over-subtitle" class="game-over-sub"></p>
         <div id="game-over-results" class="game-over-results"></div>
         <button id="btn-modal-restart" class="btn-primary">NUEVA PARTIDA</button>
@@ -253,14 +299,14 @@
 
 
   <!-- Cargar archivos JS en orden de dependencia -->
-  <script src="js/rules.js?v=3.1"></script>
-  <script src="js/deck.js?v=3.1"></script>
-  <script src="js/player.js?v=3.1"></script>
-  <script src="js/game.js?v=3.1"></script>
-  <script src="js/bot.js?v=3.1"></script>
-  <script src="js/network.js?v=3.1"></script>
-  <script src="js/anim.js?v=3.1"></script>
-  <script src="js/ui.js?v=3.1"></script>
-  <script src="js/main.js?v=3.1"></script>
+  <script src="js/rules.js?v=3.2"></script>
+  <script src="js/deck.js?v=3.2"></script>
+  <script src="js/player.js?v=3.2"></script>
+  <script src="js/game.js?v=3.2"></script>
+  <script src="js/bot.js?v=3.2"></script>
+  <script src="js/network.js?v=3.2"></script>
+  <script src="js/anim.js?v=3.2"></script>
+  <script src="js/ui.js?v=3.2"></script>
+  <script src="js/main.js?v=3.2"></script>
 </body>
 </html>

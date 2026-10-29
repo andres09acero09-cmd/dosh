@@ -24,6 +24,7 @@ const PUBLIC_DIR = __dirname;
 
 // ─── Configuración de tiempos del SERVIDOR (única autoridad del tiempo) ──────
 const TURN_SECONDS     = 30; // Vencimiento del turno → decisión automática
+const DOSH_PAUSE_MS    = 3000; // Pantallaza del canto de DOSH: se pausan los 30s del turno (en TODAS las pantallas)
 const PEEK_MAX_SECONDS = 45; // Límite total de la fase de memorización online
 const BOT_THINK_MIN_MS = 1000; // Ritmo de los bots: pensamiento mínimo entre estados
 
@@ -287,6 +288,14 @@ function scheduleTurnTimer(room) {
   room.turnTimer = setTimeout(() => onTurnTimeout(room), TURN_SECONDS * 1000 + 60);
 }
 
+/** Congela el vencimiento del turno por `ms` (p.ej. durante la pantallaza del DOSH). */
+function pauseTurnTimerBy(room, ms) {
+  if (room.turnTimer) { clearTimeout(room.turnTimer); room.turnTimer = null; }
+  if (!room.turnDeadline) return;
+  room.turnDeadline += ms;
+  room.turnTimer = setTimeout(() => onTurnTimeout(room), (room.turnDeadline - Date.now()) + 60);
+}
+
 /** Vencimiento del turno: se ejecuta UNA sola vez y con estado actual. */
 function onTurnTimeout(room) {
   room.turnTimer = null;
@@ -297,7 +306,7 @@ function onTurnTimeout(room) {
 
   const current = s.players[s.currentPlayerIndex];
   const name = current ? current.name : '?';
-  const notice = { text: `⏱ ¡Se acabó el tiempo (30s) de ${name}!`, type: 'warning' };
+  const notice = { text: `¡Se acabó el tiempo (30s) de ${name}!`, type: 'warning' };
 
   try {
     if (s.pendingDiscardPower) {
@@ -320,7 +329,7 @@ function onTurnTimeout(room) {
         return;
       }
     } else if (s.drawnCard) {
-      notice.text = `⏱ Tiempo agotado: ${name} dejó su carta en la mesa.`;
+      notice.text = `Tiempo agotado: ${name} dejó su carta en la mesa.`;
       applyEngine(room, 'discardDrawnCard', [], notice);
       return;
     } else {
@@ -775,7 +784,9 @@ function handleGameAction(room, ws, payload) {
 
     case 'ANNOUNCE_DOSH': {
       result = applyEngine(room, 'announceDosh', [],
-        (r) => r ? { text: `🔥 ¡${name} CANTÓ DOSH! Todos los demás tendrán un último turno.`, type: 'warning' } : null);
+        (r) => r ? { text: `${name} CANTÓ DOSH: ¡última ronda!`, type: 'warning' } : null);
+      // La pantallaza dura 3s y NO consume el tiempo del turno de nadie
+      if (result && result.success) pauseTurnTimerBy(room, DOSH_PAUSE_MS);
       break;
     }
 

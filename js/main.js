@@ -395,9 +395,9 @@ function _updateLobbyPlayersList(players) {
     const isHost = idx === 0;
 
     let tagHtml = '';
-    if (isHost) tagHtml += `<span class="player-tag host">👑 Host</span> `;
+    if (isHost) tagHtml += `<span class="player-tag host">${ICONS.crown} Host</span> `;
     if (isMe)   tagHtml += `<span class="player-tag you">Tú</span> `;
-    if (p.isBot) tagHtml += `<span class="player-tag bot">🤖 Bot</span> `;
+    if (p.isBot) tagHtml += `<span class="player-tag bot">${ICONS.bot} Bot</span> `;
 
     item.innerHTML = `
       <div style="font-weight: 700;">${p.name}</div>
