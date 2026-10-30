@@ -173,7 +173,7 @@ function createGame() {
     }
 
     // Crear y barajar mazo (el servidor autoritativo baraja; el cliente no ejecuta esto)
-    state.deck = customDeck ? [...customDeck] : Deck.shuffleDeck(Deck.createDeck());
+    state.deck = customDeck ? [...customDeck] : Deck.shuffleDeck([...Deck.createDeck(0), ...Deck.createDeck(1)]);
 
     // Repartir cartas
     dealCards();
@@ -842,7 +842,10 @@ function createGame() {
       // ── No coincide (Fallo al hacer copia) ──
       const slot = player.hand[slotIndex];
       const revealedCard = slot.card;
-      slot.known = true; // El jugador ahora conoce la carta porque la reveló
+      // El jugador la revela: se muestra boca arriba UNOS SEGUNDOS (la vuelve a
+      // ocultar el servidor/UI) y luego queda conocida aunque vuelva a estar oculta.
+      slot.known = true;
+      slot.faceUp = true;
 
       // Penalización: se come una carta del mazo sin verla
       if (state.deck.length === 0) {

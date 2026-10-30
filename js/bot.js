@@ -61,6 +61,17 @@
    * @param {Object} gameState - Estado actual del juego
    * @param {Object} actions - Callbacks para ejecutar acciones en la UI / Game
    */
+  /**
+   * ¿Coinciden dos cartas según las reglas OFICIALES del motor?
+   * (mismo rango, y las K solo coinciden entre del mismo color)
+   */
+  function _doesMatch(a, b) {
+    if (typeof Rules !== 'undefined' && Rules && Rules.areMatchingCards) {
+      return Rules.areMatchingCards(a, b);
+    }
+    return !!a && !!b && a.rank === b.rank && (a.rank !== 'K' || a.color === b.color);
+  }
+
   async function playTurn(botIndex, gameState, actions) {
     const player = gameState.players[botIndex];
     if (!player) return;
@@ -120,7 +131,7 @@
       let matchingSlot = -1;
       player.hand.forEach((slot, sIdx) => {
         const c = mem.knownSlots.get(sIdx) || (slot && slot.known ? slot.card : null);
-        if (c && c.rank === tableCard.rank) {
+        if (c && _doesMatch(tableCard, c)) {
           matchingSlot = sIdx;
         }
       });
@@ -272,7 +283,7 @@
       let matchSlot = -1;
       player.hand.forEach((slot, sIdx) => {
         const c = mem.knownSlots.get(sIdx) || (slot && slot.known ? slot.card : null);
-        if (c && c.rank === drawn.rank) {
+        if (c && _doesMatch(drawn, c)) {
           matchSlot = sIdx;
         }
       });

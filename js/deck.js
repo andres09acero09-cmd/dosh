@@ -58,17 +58,20 @@ function getCardValue(rank, color) {
  * Crea una baraja nueva y completa de 54 cartas.
  * Cada carta es un objeto inmutable con toda su información.
  *
+ * @param {number} deckIndex - 0 = baraja única (ids clásicos). Al mezclar DOS
+ *        barajas se usa 0 y 1 para que cada carta tenga un id único.
  * @returns {Array<Object>} Array de 54 objetos-carta
  */
-function createDeck() {
+function createDeck(deckIndex = 0) {
   const deck = [];
+  const idSuffix = deckIndex > 0 ? `_d${deckIndex}` : '';
 
   // 52 cartas normales
   for (const suit of SUITS) {
     for (const rank of RANKS) {
       const color = suit.color;
       const card = {
-        id:          `${rank}_${suit.name}`,  // ej. "K_hearts", "7_clubs"
+        id:          `${rank}_${suit.name}${idSuffix}`,  // ej. "K_hearts", "7_clubs", "K_hearts_d1"
         rank:        rank,
         suit:        suit.name,
         value:       getCardValue(rank, color),
@@ -82,7 +85,7 @@ function createDeck() {
 
   // Joker rojo
   deck.push({
-    id:          "JOKER_red",
+    id:          `JOKER_red${idSuffix}`,
     rank:        "JOKER",
     suit:        "joker",
     value:       15,
@@ -93,7 +96,7 @@ function createDeck() {
 
   // Joker negro
   deck.push({
-    id:          "JOKER_black",
+    id:          `JOKER_black${idSuffix}`,
     rank:        "JOKER",
     suit:        "joker",
     value:       15,

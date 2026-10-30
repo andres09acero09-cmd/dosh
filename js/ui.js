@@ -581,7 +581,8 @@ function renderPlayers() {
         }
       }
 
-      cardsDiv.appendChild(_buildCardEl(slot, sIndex, false, isTarget, targetClick, extraClass));
+      cardsDiv.appendChild(_buildCardEl(slot, sIndex, false, isTarget, targetClick, extraClass,
+        gs.isOnline && pIndex === gs.myPlayerIndex));
     });
 
     const countDiv = document.createElement('div');
@@ -1356,12 +1357,21 @@ async function _onSlotMatchClick(slotIndex) {
     return;
   }
 
-  // Capturar DOM y datos de la carta elegida ANTES de mutar el estado
-  const playerArea = el(`player-${playerIndex}`);
-  const cardEls    = playerArea ? playerArea.querySelectorAll('.card') : [];
-  const slotEl     = cardEls[slotIndex] || null;
-  const slot       = current.hand[slotIndex];
-  const cardData   = slot ? slot.card : null;
+  // Capturar datos de la carta elegida ANTES de mutar el estado
+  const slot = current.hand[slotIndex];
+  const cardData = slot ? slot.card : null;
+  let playerAreaRef = el(`player-${playerIndex}`);
+  let slotEl = playerAreaRef ? playerAreaRef.querySelectorAll('.card')[slotIndex] || null : null;
+
+  // ── La carta se voltea AL INSTANTE de elegirla, antes de saber si la copia es correcta ──
+  if (slot && slot.card && !slot.faceUp) {
+    slot.faceUp = true;
+    updateTurnUI();
+    // updateTurnUI reconstruye el DOM: recapturar los elementos frescos
+    playerAreaRef = el(`player-${playerIndex}`);
+    slotEl = playerAreaRef ? playerAreaRef.querySelectorAll('.card')[slotIndex] || null : null;
+    await _sleep(250); // pequeñito momento para VER la carta que eligió
+  }
 
   const result = Game.matchCardWithDrawn(slotIndex);
   if (!result.success) {
@@ -1403,8 +1413,17 @@ async function _onSlotMatchClick(slotIndex) {
     // ❌ COPIA INCORRECTA: carta se revela, se sacude en rojo, vuelve. Luego penalización vuela.
     await Anim.copyFail(slotEl, result.revealedCard);
 
-    if (result.penaltyCard && playerArea) {
-      await Anim.penaltyFly(playerArea);
+    // El motor ya la marcó como revelada (faceUp): se ve unos segundos y se vuelve a ocultar.
+    const failedSlotRef = slot;
+    if (failedSlotRef) {
+      setTimeout(() => {
+        failedSlotRef.faceUp = false;
+        updateTurnUI();
+      }, 3500);
+    }
+
+    if (result.penaltyCard && playerAreaRef) {
+      await Anim.penaltyFly(playerAreaRef);
     }
 
     if (result.drawnFromTable) {
@@ -1448,12 +1467,12 @@ function setGameMessage(msg, type = 'info') {
  * @param {Function} onActionClick - Función a ejecutar al hacer clic
  * @returns {HTMLDivElement}
  */
-function _buildCardEl(slot, slotIndex, selectable, isActionTarget = false, onActionClick = null, extraClass = '') {
+function _buildCardEl(slot, slotIndex, selectable, isActionTarget = false, onActionClick = null, extraClass = '', selfKnown = false) {
   const div = document.createElement('div');
   div.dataset.slot = slotIndex;
 
   if (slot.faceUp && slot.card) {
-    // ── Carta visible ──
+    // ── Carta visible (revelación temporal, ej. al fallar una copia) ──
     const sym = SUIT_SYMBOLS[slot.card.suit];
     div.className = `card face-up ${slot.card.color}`;
     div.innerHTML = `

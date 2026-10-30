@@ -288,6 +288,18 @@ function scheduleTurnTimer(room) {
   room.turnTimer = setTimeout(() => onTurnTimeout(room), TURN_SECONDS * 1000 + 60);
 }
 
+/** Revela un slot fallado unos segundos y lo vuelve a ocultar (solo para su dueño). */
+function scheduleCardFlipBack(room, playerIndex, slot, ms = 3500) {
+  if (!slot || !slot.card) return;
+  if (slot._flipTimer) clearTimeout(slot._flipTimer);
+  slot._flipTimer = setTimeout(() => {
+    slot._flipTimer = null;
+    slot.faceUp = false;
+    const st = room.engine ? room.engine.state : null;
+    if (st && (st.gameStatus === 'playing' || st.gameStatus === 'dosh')) broadcastState(room);
+  }, ms);
+}
+
 /** Congela el vencimiento del turno por `ms` (p.ej. durante la pantallaza del DOSH). */
 function pauseTurnTimerBy(room, ms) {
   if (room.turnTimer) { clearTimeout(room.turnTimer); room.turnTimer = null; }
@@ -476,15 +488,38 @@ async function runBotTurn(room, botIndex) {
         (r) => r ? { text: `👁 ${da} usó la Q para ver una carta propia.`, type: 'info' } : null);
     },
     matchWithTable: async (slotIdx) => {
+      const failedSlot = s.players[botIndex].hand[slotIdx] || null;
+      // ── Volteo al instante de ELEGIR la carta ──
+      if (failedSlot && failedSlot.card && !failedSlot.faceUp) {
+        failedSlot.faceUp = true;
+        broadcastState(room);
+      }
       const r1 = engine.useTableCardForCurrentPlayer();
       if (!r1 || !r1.success) return;
       const r = applyEngine(room, 'matchCardWithDrawn', [slotIdx], null);
-      if (r && r.success) {
-        const fx = (!r.gameEnded && r.matched)
-          ? { land: { p: botIndex, s: slotIdx, card: r.removedCard } }
-          : (!r.gameEnded ? { penalty: { p: botIndex } } : null);
-        afterStateChange(room, buildMatchNoticePublic(room, botIndex, r), null, null, fx);
+      if (!r || !r.success) return;
+
+      // RESTRICCIÓN anti-bucle: si el bot falla la copia 3 veces en EL MISMO
+      // turno, se pasa el turno de una vez (los fallos con la mesa no pasan el turno).
+      if (!r.matched && !r.gameEnded) {
+        scheduleCardFlipBack(room, botIndex, failedSlot);
+        const failKey = `${botIndex}_${s.turnId}`;
+        if (room.botFailKey !== failKey) { room.botFailKey = failKey; room.botFailCount = 0; }
+        room.botFailCount = (room.botFailCount || 0) + 1;
+        if (room.botFailCount >= 3) {
+          room.botFailCount = 0;
+          applyEngine(room, 'nextTurn', [],
+            { text: `🤖 ${da} falló la copia 3 veces: se pasa el turno.`, type: 'info' },
+            null, null,
+            (r3) => ({ penalty: { p: botIndex } }));
+          return;
+        }
       }
+
+      const fx = (!r.gameEnded && r.matched)
+        ? { land: { p: botIndex, s: slotIdx, card: r.removedCard } }
+        : (!r.gameEnded ? { penalty: { p: botIndex } } : null);
+      afterStateChange(room, buildMatchNoticePublic(room, botIndex, r), null, null, fx);
     },
     replaceWithTable: async (slotIdx) => {
       const r1 = engine.useTableCardForCurrentPlayer();
@@ -517,8 +552,15 @@ async function runBotTurn(room, botIndex) {
         (r) => r ? { swap: { ap: botIndex, as: mySlot, bp: rivalIdx, bs: rivalSlot } } : null);
     },
     matchWithDrawn: async (slotIdx) => {
+      const failedSlot = s.players[botIndex].hand[slotIdx] || null;
+      // ── Volteo al instante de ELEGIR la carta ──
+      if (failedSlot && failedSlot.card && !failedSlot.faceUp) {
+        failedSlot.faceUp = true;
+        broadcastState(room);
+      }
       const r = applyEngine(room, 'matchCardWithDrawn', [slotIdx], null);
       if (r && r.success) {
+        if (!r.matched && !r.gameEnded) scheduleCardFlipBack(room, botIndex, failedSlot);
         const fx = (!r.gameEnded && r.matched)
           ? { land: { p: botIndex, s: slotIdx, card: r.removedCard } }
           : (!r.gameEnded ? { penalty: { p: botIndex } } : null);
@@ -708,6 +750,13 @@ function handleGameAction(room, ws, payload) {
     }
 
     case 'MATCH': {
+      // Referencia al slot elegido ANTES de que la penalización mueva la mano
+      const failedSlot = s.players[playerIndex].hand[payload.slotIndex] || null;
+      // ── La carta se voltea AL INSTANTE de elegirla (en TODAS las pantallas) ──
+      if (failedSlot && failedSlot.card && !failedSlot.faceUp) {
+        failedSlot.faceUp = true;
+        broadcastState(room);
+      }
       result = applyEngine(room, 'matchCardWithDrawn', [payload.slotIndex],
         (r) => r ? buildMatchNoticePublic(room, playerIndex, r) : null,
         (r) => {
@@ -721,6 +770,9 @@ function handleGameAction(room, ws, payload) {
           if (r.matched) return { land: { p: playerIndex, s: a[0], card: r.removedCard } };
           return { penalty: { p: playerIndex } };
         });
+      if (result && result.success && !result.matched && !result.gameEnded) {
+        scheduleCardFlipBack(room, playerIndex, failedSlot);
+      }
       break;
     }
 
