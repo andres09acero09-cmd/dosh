@@ -58,6 +58,9 @@ function _attachListeners() {
     btnSelectOnline.addEventListener('click', () => {
       UI.renderOnlineScreen();
       Network.connect();
+      // Partida nueva: siempre mostrar el menú normal (Crear / Unirse),
+      // nunca el lobby de una sala de una partida anterior
+      _showOnlineEntryPanel();
     });
   }
 
