@@ -27,6 +27,7 @@ const Network = (() => {
     onActionError: null,
     onBackToLobby: null,
     onPlayerLeft: null,
+    onChat: null,
     onError: null,
   };
 
@@ -162,6 +163,11 @@ const Network = (() => {
         if (callbacks.onPlayerLeft) callbacks.onPlayerLeft(payload);
         break;
 
+      case 'CHAT_MSG':
+        // Mensaje de chat en vivo durante la partida (no se almacena nada)
+        if (callbacks.onChat) callbacks.onChat(payload);
+        break;
+
       case 'ERROR':
         if (callbacks.onError) callbacks.onError(payload.message);
         break;
@@ -217,6 +223,10 @@ const Network = (() => {
     lastTurnId = 0;
   }
 
+  function sendChat(text) {
+    send('CHAT_SEND', { text });
+  }
+
   function on(event, callback) {
     if (event in callbacks) {
       callbacks[event] = callback;
@@ -231,6 +241,7 @@ const Network = (() => {
     send: (type, payload) => send(type, payload),
     sendGameAction,
     leaveRoom,
+    sendChat,
     on,
     isConnected: () => isConnected,
     isHost: () => isHost,

@@ -251,6 +251,27 @@ function _attachListeners() {
     });
   }
 
+  // ── Chat en vivo (partidas online) ──
+  const btnChatToggle = document.getElementById('btn-chat-toggle');
+  const btnChatClose  = document.getElementById('btn-chat-close');
+  const btnChatSend   = document.getElementById('btn-chat-send');
+  const chatInput     = document.getElementById('chat-input');
+  if (btnChatToggle) {
+    btnChatToggle.addEventListener('click', () => UI._toggleChatPanel());
+  }
+  if (btnChatClose) {
+    btnChatClose.addEventListener('click', () => UI._toggleChatPanel());
+  }
+  if (btnChatSend && chatInput) {
+    btnChatSend.addEventListener('click', () => UI._sendChat());
+    chatInput.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        UI._sendChat();
+      }
+    });
+  }
+
   // ── 4. Fase de memoria ──
   document.getElementById('btn-peek-ready').addEventListener('click', () => {
     if (Game.gameState.isOnline) {
@@ -315,6 +336,11 @@ function _setupNetworkListeners() {
   // El servidor rechazó una acción (fuera de turno, ilegal o atrasada)
   Network.on('onActionError', (message) => {
     Anim.toast(message, 'error', 2200);
+  });
+
+  // Chat en vivo de la partida (el servidor reenvía a toda la sala; nada se guarda)
+  Network.on('onChat', (payload) => {
+    UI.addChatMessage(payload);
   });
 
   // El anfitrión mandó a todos de vuelta al lobby

@@ -158,6 +158,12 @@ function renderPeekScreen() {
   const gs      = Game.gameState;
   const peeker  = Game.getCurrentPeeker();
 
+  // El chat solo existe en partidas ONLINE: limpiarlo y ocultarlo en partidas locales
+  if (!gs.isOnline) {
+    _resetChat();
+    hide('btn-chat-toggle');
+  }
+
   // Si el peeker es un Bot, memoriza automáticamente sus cartas permitidas y avanza
   if (peeker && peeker.isBot) {
     const canSee = gs.cardsPerPlayer / 2;
@@ -2047,6 +2053,10 @@ function startOnlineGame(players, cardsPerPlayer) {
   uiState.pendingMode = null;
   uiState.qPeekPendingSlot = null;
 
+  // Chat en vivo: nueva partida → se limpia y aparece el botón flotante
+  _resetChat();
+  show('btn-chat-toggle');
+
   const gs = Game.gameState;
   const myId = Network.getMyPlayerId();
   const myIndex = players.findIndex(p => p.id === myId);
@@ -2522,6 +2532,66 @@ function el(id)   { return document.getElementById(id); }
 function show(id) { const e = el(id); if (e) e.classList.remove('hidden'); }
 function hide(id) { const e = el(id); if (e) e.classList.add('hidden'); }
 
+// ─── Chat en vivo (solo online; no se guarda nada, vive en memoria) ──────────
+
+function _resetChat() {
+  const box = el('chat-messages');
+  if (box) box.innerHTML = '';
+  hide('chat-panel');
+  const input = el('chat-input');
+  if (input) input.value = '';
+}
+
+function _toggleChatPanel() {
+  const panel = el('chat-panel');
+  if (!panel) return;
+  const willShow = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden');
+  if (willShow) {
+    const box = el('chat-messages');
+    if (box) box.scrollTop = box.scrollHeight;
+    const input = el('chat-input');
+    if (input) input.focus();
+  }
+}
+
+function _sendChat() {
+  const input = el('chat-input');
+  if (!input) return;
+  const text = input.value.trim().substring(0, 200);
+  if (!text) return;
+  input.value = '';
+  Network.sendChat(text);
+}
+
+/**
+ * Añade un mensaje recibido del servidor a la ventana del chat.
+ * @param {{id: string, name: string, text: string, ts: number}} payload
+ */
+function addChatMessage(payload) {
+  const box = el('chat-messages');
+  if (!box || !payload || !payload.text) return;
+
+  // Mantener la conversación ligera: máximo 50 mensajes en pantalla
+  while (box.children.length >= 50) box.removeChild(box.firstChild);
+
+  const isMine = payload.id && payload.id === Network.getMyPlayerId();
+  const row  = document.createElement('div');
+  row.className = isMine ? 'chat-row mine' : 'chat-row theirs';
+
+  const who  = document.createElement('span');
+  who.className = 'chat-who';
+  who.textContent = isMine ? 'Tú' : (payload.name || '?');
+  const what = document.createElement('span');
+  what.className = 'chat-text';
+  what.textContent = payload.text; // textContent = nunca HTML inyectado
+
+  row.appendChild(who);
+  row.appendChild(what);
+  box.appendChild(row);
+  box.scrollTop = box.scrollHeight;
+}
+
 // ─── Exportar ─────────────────────────────────────────────────────────────────
 
 const UI = {
@@ -2551,4 +2621,7 @@ const UI = {
   endOnlinePeekTurn,
   applyServerState,
   applyPeekReveal,
+  addChatMessage,
+  _toggleChatPanel,
+  _sendChat,
 };

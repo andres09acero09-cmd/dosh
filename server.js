@@ -247,7 +247,7 @@ function broadcastState(room, notice = null, personal = null, personalForIndex =
   room.players.forEach(p => {
     if (p.isBot || !p.ws) return;
     const myIndex = findEngineIndexByRoomId(room, p.id);
-    if (myIndex === -1) return;
+    if (myIndex === -1) { console.error(`[broadcastState] jugador ${p.name} (${p.id}) no mapea al engine`); return; }
 
     const payload = {
       public: publicView(room, notice, fx),
@@ -1087,6 +1087,30 @@ function handleClientMessage(ws, msg) {
 
     case 'LEAVE_ROOM': {
       handleClientDisconnect(ws);
+      break;
+    }
+
+    case 'CHAT_SEND': {
+      // Chat en vivo SOLO durante la partida: el servidor reenvía el texto
+      // a toda la sala; NADA se guarda (los bots no escriben, solo escuchan nada).
+      if (!room || room.status !== 'playing') return;
+      const text = String(payload.text || '').trim().substring(0, 200);
+      if (!text) return;
+      // Límite simple anti-spam: 500ms entre mensajes por conexión
+      const now = Date.now();
+      if (ws.lastChatMs && now - ws.lastChatMs < 500) return;
+      ws.lastChatMs = now;
+      const sender = room.players.find(p => p.id === ws.clientId);
+      if (!sender) return;
+      broadcastToRoom(room, {
+        type: 'CHAT_MSG',
+        payload: {
+          id: ws.clientId,
+          name: sender.name,
+          text,
+          ts: now,
+        },
+      });
       break;
     }
 
